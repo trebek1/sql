@@ -1,0 +1,242 @@
+Database: container for data that you store
+sqlite: all stored in one file
+database dictionary: list of structures and types of data in database 
+
+table: collection of related data held in a database 
+field: basic unit of data in a table 
+BLOB: Binary Large Object 
+column == field 
+row: single set of data in the table 
+One cutomer table with name linked to invoices. One cust to many invoices. 
+Called a join 
+Use a linking table to link two tables of data together 
+splitting data up : database normalization : remove duplicate, redundant or replicated data 
+
+view: selection of rows and columns possible from more than one table 
+
+sqlite <dbname> to start a db 
+
+.headers on to show headers 
+.help to go to help 
+
+Make a contacts table 
+create table contacts (name text, phone integer, email);
+insert into contacts (name, phone, email) values('Tim', 65456, 'alex@wmail.com');
+
+select name from contacts;
+
+….> means needs a semicolon; 
+
+ insert into contacts values("Brian", 1234, "alex@a.com");
+
+on headers shows 
+name|phone|email
+
+at top of table 
+
+can insert less than all fields into table but need to specify what you are adding 
+insert into contacts(name,phone) values("steve", 234); // will work 
+insert into contacts values("steve", 343353); will not work 
+can put any kind of data into any column in sqlite 
+
+
+insert into contacts values("aaa", "353agdf", "argraa"); this works! — wtf 
+
+to create a backup of a DB 
+.backup testbackup  
+— this is a sqlite command so you dont need to end it with a semicolon 
+
+Updates all rows in the table 
+update contacts set email="steve@hisemail.com";
+
+to restore DB 
+.restore testbackup 
+
+to update only one row 
+update contacts set email="alex@myemail.com" where name = "alex”;
+
+Select only certain fields from a tale using where statement 
+select phone, email  from contacts where name = "Tim";
+
+to delete entry or entries use delete! 
+delete from contacts where name = "steve";
+
+to list all tables in the DB 
+.tables 
+
+show fields in table
+.schema  <tablename>
+
+Show steps required to create table
+.dump
+— called a transaction 
+
+.exit —> get out of command line shell 
+
+
+primary key must be unique 
+
+insert into artists values(201, “Linkin Park“);
+— cant insert this since 201 already exists and is primary key 
+title text not null —> all titles must have a value! 
+
+SQL Order By and Joins 
+
+alphabetical order by name
+select * from artists order by name;
+
+to ignore case 
+select * from albums order by name collate nocase;
+
+select * from albums order by name collate nocase desc;
+
+sort descending and no case 
+select * from albums order by name collate nocase desc;
+
+ select songs.track, songs.title, albums.name from songs join albums on songs.album = albums._id;
+could also say…
+select track, title, name from songs join albums on song.album = albums._id;  —> bad practice — specify table name in code 
+
+ambiguous column name 
+select track, title, name from songs join albums on song.album = ._id; —> both tables have a column _id! 
+
+JOIN is short for INNER JOIN 
+select songs.track, songs.title, albums.name from songs INNER JOIN albums on songs.album = albums._id;
+
+could order by albums.name, songs.track; 
+
+More Complex Joins 
+select albums.name, songs.track, songs.title from songs inner join albums on songs.album = albums._id order by albums.name, songs.track;
+
+Notice: that fields come from both tables so songs inner join albums 
+Notice: albums._id is primary key so unique. So, songs.album will be a unique record from albums._id;
+
+select artists.name, albums.name from albums inner join artists on albums.artist = artists._id order by artists.name asc;
+remember to use from and end the fields by not including comma after last one 
+
+How do you pair an artist with a song? No direct link from artist to song. 
+
+select artists.name, albums.name, songs.track, songs.title from songs
+inner join albums on songs.album = albums._id
+inner join artists on albums.artist = artists._id
+where artists._id = 188
+order by artists.name, albums.name, songs.track;
+
+*order is important in keeping clauses
+*where clause must come before order by clause etc 
+
+select top 10 * from songs;  —> does not work in sqlite3;
+
+select * from songs limit 10;
+
+Idea: select columns, join tables, filter with where, order by whaterver;
+
+where can use wildcards to get similar lines 
+know doctor is in the title:
+
+select artists.name, albums.name, songs.track, songs.title from songs
+inner join albums on songs.album = albums._id
+inner join artists on albums.artist = artists._id
+where songs.title LIKE "%doctor%"
+order by artists.name, albums.name, songs.track;
+
+— be careful with quotes 
+ 
+— LIKE is not case sensitive 
+— equals is case sensitive 
+— like does not need to use wildcard 
+
+— if you leave % off of front then only matches after 
+— can use underscore to match one character wildcard 
+— % is 0, 1 or multiple characters 
+
+
+Views 
+
+— cant update a view (read insert delete) but can query a view 
+create view artist_list as select artists.name, albums.name, songs.track, songs.title from songs inner join albums on songs.album = albums._id inner join artists on albums.artist = artists._id order by artists.name, albums.name, songs.track;
+
+use create view command to create a view create view <name> select. ….
+
+can see your view in .schema 
+
+can then query the view: select * from artist_list where name like "jefferson%";
+
+One common view is to remove id; 
+
+create view album_list as select name from albums order by name;
+select * from album_list;
+
+delete view: drop view album_list;
+
+create the view insensitive to case 
+create view album_list as select name from albums order by name collate nocase;
+
+If create a view with same header name in two columns from diff tables: 
+sqlite3 creates headers name and name:1
+
+To make them distinct: use AS after. 
+
+select artist.name AS artist, select song.name AS song …. etc… while selecting columns. 
+
+.backup music-backup2
+
+delete records 
+delete from songs where track < 50; 
+
+can use functions in select statement;
+
+select count(*) from songs; counts the songs; 
+
+.restore music-backup2 to restore a database from a backup
+
+.backup <name>
+.restore <name>
+
+CHALLENGE
+    1. Select the titles of all songs on album “Forbidden”; 
+	select songs.title from songs inner join albums on songs.album = albums._id where albums.name = "Forbidden";
+2. repeat but display songs in track order. (may use track number to verify it worked)
+	select songs.title, songs.track from songs inner join albums on songs.album = albums._id where albums.name = "Forbidden" order by songs.track;
+
+3. display all songs from band deep purple
+	select songs.title from songs 
+	inner join albums on songs.album = albums._id 
+	inner join artists on albums.artist = artists._id 
+	where artists.name = "Deep Purple";
+
+4. rename band Mehitabel to One Kitten. SET artists.name wont work, just need to specify name 
+		update artists set name = "One Kitten" where name = "Mehitabel";
+     5. check that record was correctly renamed
+	select * from artists order by name collate nocase desc;
+	select * from artists order by name desc;
+	
+6. Select the titles of all the songs by Aerosmith in alphabetical order — include only title in output 
+	select songs.title from songs inner join albums on albums._id = songs.album inner join artists on artists._id = albums.artist where artists.name = "Aerosmith" order by songs.title desc;
+7. replace the column that u used in previous answer with count(title) to get number of songs; 
+	select count(songs.title) from songs inner join albums on albums._id = songs.album inner join artists on artists._id = albums.artist where artists.name = "Aerosmith" order by songs.title desc;
+// 151
+8. search internet for way to get list of songs from 6 without duplicates 
+	 select distinct songs.title from songs inner join albums on albums._id = songs.album inner join artists on artists._id = albums.artist where artists.name = "Aerosmith" order by songs.title desc;
+9. get count without dupes
+	 select count (distinct songs.title) from songs inner join albums on albums._id = songs.album inner join artists on artists._id = albums.artist where artists.name = "Aerosmith" order by songs.title desc;
+
+10. repeat 9 for number of artists (which should be 1) and number of albums; 
+	select count(distinct artist) from artist_list where artist = “Aerosmith”;
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
